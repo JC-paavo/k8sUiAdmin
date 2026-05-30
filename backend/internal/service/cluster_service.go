@@ -21,20 +21,16 @@ func (s *ClusterService) CreateCluster(cluster *model.Cluster) error {
 		return errors.New("集群名称已存在")
 	}
 
+	cluster.Status = "pending"
 	err = repository.DB.Create(cluster).Error
 	if err != nil {
-		return err
-	}
-
-	err = k8s.TestConnection(cluster)
-	if err != nil {
-		repository.DB.Delete(cluster)
 		return err
 	}
 
 	version, err := k8s.GetVersion(cluster)
 	if err != nil {
 		cluster.Status = "error"
+		cluster.Version = ""
 	} else {
 		cluster.Status = "connected"
 		cluster.Version = version
