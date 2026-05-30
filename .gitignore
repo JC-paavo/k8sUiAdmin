@@ -11,6 +11,9 @@ k8s-ui-admin.exe
 # 二进制文件
 *.exe
 *.out
+cmd/cmd.exe
+cmd/cmd-linux*
+cmd-linux*
 
 # 数据库
 *.db
