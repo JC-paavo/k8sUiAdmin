@@ -95,6 +95,23 @@ func (api *UserAPI) GetUser(c *gin.Context) {
 	c.JSON(http.StatusOK, user)
 }
 
+func (api *UserAPI) GetUserByAdmin(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID格式错误"})
+		return
+	}
+
+	user, err := api.userService.GetUserByID(uint(id))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "用户不存在"})
+		return
+	}
+
+	c.JSON(http.StatusOK, user)
+}
+
 func (api *UserAPI) CreateUser(c *gin.Context) {
 	var req struct {
 		Username string `json:"username" binding:"required"`
@@ -141,13 +158,26 @@ func (api *UserAPI) UpdateUser(c *gin.Context) {
 		return
 	}
 
-	var user model.User
-	if err := c.ShouldBindJSON(&user); err != nil {
+	var req struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+		Email    string `json:"email"`
+		Role     string `json:"role"`
+		Status   bool   `json:"status"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	user.ID = uint(id)
+	user := model.User{
+		ID:       uint(id),
+		Username: req.Username,
+		Password: req.Password,
+		Email:    req.Email,
+		Role:     req.Role,
+		Status:   req.Status,
+	}
 	err = api.userService.UpdateUser(&user)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

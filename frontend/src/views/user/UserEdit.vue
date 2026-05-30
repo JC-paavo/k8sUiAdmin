@@ -24,7 +24,16 @@
         <el-form-item label="状态">
           <el-switch v-model="userForm.status" :disabled="isAdmin" />
         </el-form-item>
-        
+
+        <el-form-item label="新密码">
+          <el-input 
+            v-model="userForm.password" 
+            placeholder="留空则不修改密码" 
+            type="password" 
+            show-password 
+          />
+        </el-form-item>
+
         <el-form-item>
           <el-button type="primary" @click="handleSubmit">保存</el-button>
           <el-button @click="goBack">取消</el-button>
@@ -55,7 +64,8 @@ const userForm = reactive({
   username: '',
   email: '',
   role: 'user',
-  status: true
+  status: true,
+  password: ''
 })
 
 const userRules = {
@@ -81,6 +91,9 @@ const handleSubmit = async () => {
       email: userForm.email,
       role: userForm.role,
       status: userForm.status
+    }
+    if (userForm.password) {
+      data.password = userForm.password
     }
     
     await userAPI.update(route.params.id, data)

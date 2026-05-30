@@ -66,8 +66,6 @@
             <el-descriptions-item label="命名空间">{{ resource?.metadata?.namespace }}</el-descriptions-item>
             <el-descriptions-item label="创建时间">{{ formatTime(resource?.metadata?.creationTimestamp) }}</el-descriptions-item>
             <el-descriptions-item label="UID">{{ resource?.metadata?.uid }}</el-descriptions-item>
-            <el-descriptions-item label="资源版本">{{ resource?.metadata?.resourceVersion }}</el-descriptions-item>
-            <el-descriptions-item label="生成版本">{{ resource?.metadata?.generation }}</el-descriptions-item>
             
             <!-- Deployment专属信息 -->
             <template v-if="resourceType === 'deployments'">
@@ -89,9 +87,6 @@
               </el-descriptions-item>
               <el-descriptions-item label="更新副本">
                 <span class="replica-number">{{ resource?.status?.updatedReplicas || 0 }}</span>
-              </el-descriptions-item>
-              <el-descriptions-item label="生成版本">
-                <span class="generation-number">{{ resource?.metadata?.generation }}</span>
               </el-descriptions-item>
               <el-descriptions-item label="就绪时间">
                 {{ resource?.status?.conditions?.find(c => c.type === 'Available')?.lastUpdateTime ? formatTime(resource?.status?.conditions?.find(c => c.type === 'Available')?.lastUpdateTime) : '-' }}
@@ -1492,18 +1487,6 @@ onUnmounted(() => {
 
 .replica-number.ready {
   color: #67c23a;
-}
-
-.generation-control {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.generation-number {
-  font-size: 16px;
-  font-weight: 600;
-  font-family: 'Courier New', monospace;
 }
 
 .history-list {

@@ -78,9 +78,7 @@ const userRules = {
       trigger: 'blur'
     }
   ],
-  email: [
-    { type: 'email', message: '请输入有效的邮箱地址', trigger: 'blur' }
-  ],
+  email: [],
   role: [
     { required: true, message: '请选择角色', trigger: 'blur' }
   ]

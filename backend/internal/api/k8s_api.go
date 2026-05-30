@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -1134,5 +1135,33 @@ func fetchLiveMetrics(cluster *model.Cluster, namespace, podName string) *Timeli
 		}
 	}
 	return nil
+}
+
+func (api *K8sAPI) ExecPod(c *gin.Context) {
+	cluster, err := api.getCluster(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "集群ID格式错误"})
+		return
+	}
+
+	namespace := c.Param("namespace")
+	podName := c.Param("name")
+	container := c.DefaultQuery("container", "")
+	if container == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "请指定容器名称"})
+		return
+	}
+
+	conn, err := k8s.Upgrader.Upgrade(c.Writer, c.Request, nil)
+	if err != nil {
+		log.Printf("WebSocket upgrade failed: %v", err)
+		return
+	}
+	defer conn.Close()
+
+	err = k8s.ExecPod(c.Request.Context(), cluster, namespace, podName, container, []string{"/bin/sh", "-c", "TERM=xterm-256color; export TERM; [ -x /bin/bash ] && exec /bin/bash || exec /bin/sh"}, conn)
+	if err != nil {
+		log.Printf("Pod exec failed: %v", err)
+	}
 }
 

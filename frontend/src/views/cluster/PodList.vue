@@ -123,9 +123,13 @@
               {{ formatTime(scope.row.metadata.creationTimestamp) }}
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="240" fixed="right" :cell-style="{ textAlign: 'center' }">
+          <el-table-column label="操作" width="320" fixed="right" :cell-style="{ textAlign: 'center' }">
             <template #default="scope">
               <div class="action-buttons">
+                <el-button size="small" @click="openExec(scope.row)" class="action-btn exec-btn" :disabled="!isPodRunning(scope.row)">
+                  <el-icon><Monitor /></el-icon>
+                  终端
+                </el-button>
                 <el-button size="small" @click="viewLogs(scope.row)" class="action-btn log-btn">
                   <el-icon><Document /></el-icon>
                   日志
@@ -238,6 +242,27 @@
         <el-button type="primary" @click="fetchEvents">刷新</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="showTerminal" title="Pod 终端" width="80%" :close-on-click-modal="false" @closed="handleTerminalClosed" destroy-on-close>
+      <div class="terminal-header">
+        <div class="terminal-info">
+          <span class="terminal-path">{{ execPod?.metadata?.namespace }} / {{ execPod?.metadata?.name }}</span>
+          <span class="terminal-path" v-if="execContainers.length > 1">选择容器：</span>
+          <el-select v-if="execContainers.length > 1" v-model="execContainer" size="small" @change="reconnectTerminal">
+            <el-option v-for="c in execContainers" :key="c" :label="c" :value="c" />
+          </el-select>
+          <span v-else class="terminal-container-badge">{{ execContainer }}</span>
+        </div>
+      </div>
+      <WebTerminal 
+        v-if="showTerminal"
+        :key="terminalKey"
+        :cluster-id="clusterId"
+        :namespace="execPod?.metadata?.namespace"
+        :pod-name="execPod?.metadata?.name"
+        :container="execContainer"
+      />
+    </el-dialog>
   </div>
 </template>
 
@@ -245,8 +270,10 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Delete, Document, Monitor } from '@element-plus/icons-vue'
 import { k8sAPI, authAPI, clusterAPI } from '@/utils/api'
 import IconPod from '@/assets/icons/IconPod.vue'
+import WebTerminal from '@/components/WebTerminal.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -265,6 +292,11 @@ const searchQuery = ref('')
 const currentPage = ref(1)
 const pageSize = ref(20)
 const cluster = ref(null)
+const showTerminal = ref(false)
+const execPod = ref(null)
+const execContainer = ref('')
+const execContainers = ref([])
+const terminalKey = ref(0)
 
 const clusterId = computed(() => route.params.id)
 const clusterName = ref('')
@@ -480,6 +512,29 @@ const fetchEvents = async () => {
     eventsContent.value = []
     ElMessage.error('获取事件失败: ' + (error.response?.data?.error || error.message))
   }
+}
+
+const isPodRunning = (pod) => {
+  return pod?.status?.phase === 'Running'
+}
+
+const openExec = (pod) => {
+  const containers = pod?.spec?.containers || []
+  if (containers.length === 0) return
+  execPod.value = pod
+  execContainers.value = containers.map(c => c.name)
+  execContainer.value = containers[0].name
+  showTerminal.value = true
+}
+
+const handleTerminalClosed = () => {
+  execPod.value = null
+  execContainer.value = ''
+  execContainers.value = []
+}
+
+const reconnectTerminal = () => {
+  terminalKey.value++
 }
 
 const handleDelete = async (resource) => {
@@ -994,6 +1049,47 @@ onMounted(async () => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.exec-btn {
+  background: linear-gradient(135deg, #67c23a, #529b2e);
+  border: none;
+  color: white;
+}
+
+.exec-btn:hover {
+  box-shadow: 0 4px 12px rgba(103, 194, 58, 0.4);
+}
+
+.terminal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 8px 16px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+}
+
+.terminal-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.terminal-path {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.terminal-container-badge {
+  font-size: 12px;
+  color: #67c23a;
+  background: #f0f9eb;
+  padding: 2px 10px;
+  border-radius: 4px;
+  font-weight: 500;
 }
 
 .logs-toolbar {

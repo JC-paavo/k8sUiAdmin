@@ -9,7 +9,7 @@ type User struct {
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 	Username          string               `gorm:"unique;not null" json:"username"`
 	Password          string               `gorm:"not null" json:"-"`
-	Email             string               `gorm:"unique" json:"email"`
+	Email             string               `json:"email"`
 	Role              string               `gorm:"not null;default:'user'" json:"role"`
 	Status            bool                 `gorm:"default:true" json:"status"`
 	ClusterPermissions []ClusterPermission `gorm:"foreignKey:UserID"`
@@ -40,8 +40,8 @@ type ClusterPermission struct {
 	UserID     uint   `gorm:"not null" json:"user_id"`
 	ClusterID  uint   `gorm:"not null" json:"cluster_id"`
 	Permission string `gorm:"not null" json:"permission"`
-	User       User   `gorm:"foreignKey:UserID"`
-	Cluster    Cluster `gorm:"foreignKey:ClusterID"`
+	User       User    `gorm:"foreignKey:UserID" json:"user"`
+	Cluster    Cluster `gorm:"foreignKey:ClusterID" json:"cluster"`
 }
 
 type AuditLog struct {

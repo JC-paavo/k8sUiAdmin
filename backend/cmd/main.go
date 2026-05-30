@@ -76,7 +76,7 @@ func main() {
 		{
 			admin.POST("/users", userAPI.CreateUser)
 			admin.GET("/users", userAPI.ListUsers)
-			admin.GET("/users/:id", userAPI.GetUser)
+			admin.GET("/users/:id", userAPI.GetUserByAdmin)
 			admin.PUT("/users/:id", userAPI.UpdateUser)
 			admin.DELETE("/users/:id", userAPI.DeleteUser)
 
@@ -120,6 +120,7 @@ func main() {
 		read.GET("/pods/:namespace/:name/logs", k8sAPI.GetPodLogs)
 		read.GET("/pods/:namespace/:name/metrics", k8sAPI.GetPodMetrics)
 		read.GET("/pods/:namespace/:name/events", k8sAPI.GetPodEvents)
+		read.GET("/pods/:namespace/:name/exec", k8sAPI.ExecPod)
 		read.GET("/events", k8sAPI.ListEvents)
 	}
 

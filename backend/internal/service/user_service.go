@@ -55,7 +55,7 @@ func (s *UserService) GetUserByID(id uint) (*model.User, error) {
 
 func (s *UserService) CreateUser(user *model.User) error {
 	var existing model.User
-	err := repository.DB.Where("username = ?", user.Username).First(&existing).Error
+	err := repository.DB.Unscoped().Where("username = ?", user.Username).First(&existing).Error
 	if err == nil {
 		return errors.New("用户名已存在")
 	}
@@ -100,7 +100,8 @@ func (s *UserService) DeleteUser(id uint) error {
 	if id == 1 {
 		return errors.New("不能删除管理员账号")
 	}
-	return repository.DB.Delete(&model.User{}, id).Error
+	repository.DB.Where("user_id = ?", id).Delete(&model.ClusterPermission{})
+	return repository.DB.Unscoped().Delete(&model.User{}, id).Error
 }
 
 func (s *UserService) ListUsers(page, pageSize int, keyword string) ([]model.User, int64, error) {
