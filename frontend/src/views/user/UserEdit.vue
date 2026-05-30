@@ -5,9 +5,9 @@
     </div>
     
     <div v-if="user" class="form-container">
-      <el-form ref="userForm" :model="userForm" :rules="userRules" label-width="100px">
+      <el-form ref="userFormRef" :model="userForm" :rules="userRules" label-width="100px">
         <el-form-item label="用户名" prop="username">
-          <el-input v-model="userForm.username" placeholder="请输入用户名" />
+          <el-input v-model="userForm.username" placeholder="请输入用户名" :disabled="isAdmin" />
         </el-form-item>
         
         <el-form-item label="邮箱" prop="email">
@@ -15,14 +15,14 @@
         </el-form-item>
         
         <el-form-item label="角色" prop="role">
-          <el-select v-model="userForm.role" placeholder="请选择角色">
+          <el-select v-model="userForm.role" placeholder="请选择角色" :disabled="isAdmin">
             <el-option label="普通用户" value="user" />
             <el-option label="管理员" value="admin" />
           </el-select>
         </el-form-item>
         
         <el-form-item label="状态">
-          <el-switch v-model="userForm.status" />
+          <el-switch v-model="userForm.status" :disabled="isAdmin" />
         </el-form-item>
         
         <el-form-item>
@@ -39,7 +39,7 @@
 </template>
 
 <script setup>
-import { reactive, ref, onMounted } from 'vue'
+import { reactive, ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { userAPI } from '@/utils/api'
@@ -48,6 +48,8 @@ const route = useRoute()
 const router = useRouter()
 
 const user = ref(null)
+const userFormRef = ref(null)
+const isAdmin = computed(() => route.params.id === '1')
 
 const userForm = reactive({
   username: '',
@@ -70,6 +72,9 @@ const userRules = {
 }
 
 const handleSubmit = async () => {
+  const valid = await userFormRef.value.validate().catch(() => false)
+  if (!valid) return
+
   try {
     const data = {
       username: userForm.username,

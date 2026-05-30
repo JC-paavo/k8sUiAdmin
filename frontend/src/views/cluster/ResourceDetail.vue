@@ -166,6 +166,15 @@
           </div>
         </el-card>
         
+        <!-- Pod 资源监控图表 -->
+        <template v-if="resourceType === 'pods' && resource">
+          <PodMetricsChart
+            :clusterId="clusterId"
+            :namespace="resource.metadata.namespace"
+            :podName="resource.metadata.name"
+          />
+        </template>
+        
         <!-- ConfigMap 数据内容 -->
         <el-card class="detail-card" v-if="resourceType === 'configmaps'">
           <template #header>
@@ -656,6 +665,7 @@ import IconDeployment from '@/assets/icons/IconDeployment.vue'
 import IconIngress from '@/assets/icons/IconIngress.vue'
 import IconSecret from '@/assets/icons/IconSecret.vue'
 import IconConfigMap from '@/assets/icons/IconConfigMap.vue'
+import PodMetricsChart from '@/components/PodMetricsChart.vue'
 import jsYaml from 'js-yaml'
 
 const route = useRoute()

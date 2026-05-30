@@ -5,7 +5,7 @@
     </div>
     
     <div class="form-container">
-      <el-form ref="userForm" :model="userForm" :rules="userRules" label-width="100px">
+      <el-form ref="userFormRef" :model="userForm" :rules="userRules" label-width="100px">
         <el-form-item label="用户名" prop="username">
           <el-input v-model="userForm.username" placeholder="请输入用户名" />
         </el-form-item>
@@ -46,6 +46,8 @@ import { userAPI } from '@/utils/api'
 
 const router = useRouter()
 
+const userFormRef = ref(null)
+
 const userForm = reactive({
   username: '',
   password: '',
@@ -85,6 +87,9 @@ const userRules = {
 }
 
 const handleSubmit = async () => {
+  const valid = await userFormRef.value.validate().catch(() => false)
+  if (!valid) return
+
   try {
     const data = {
       username: userForm.username,

@@ -47,14 +47,18 @@
 
 <script setup>
 import { ref, reactive } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { authAPI } from '@/utils/api'
+import { useAuthStore } from '@/stores/auth'
 
 const props = defineProps({
   modelValue: Boolean
 })
 const emit = defineEmits(['update:modelValue'])
 
+const router = useRouter()
+const authStore = useAuthStore()
 const formRef = ref(null)
 const loading = ref(false)
 
@@ -112,6 +116,10 @@ const handleSubmit = async () => {
     await authAPI.changePassword(form.oldPassword, form.newPassword)
     ElMessage.success('密码修改成功，请重新登录')
     handleClose()
+    setTimeout(() => {
+      authStore.logout()
+      router.push('/login')
+    }, 500)
   } catch (error) {
     ElMessage.error(error.response?.data?.error || '密码修改失败')
   } finally {

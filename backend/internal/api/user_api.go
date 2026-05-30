@@ -96,10 +96,32 @@ func (api *UserAPI) GetUser(c *gin.Context) {
 }
 
 func (api *UserAPI) CreateUser(c *gin.Context) {
-	var user model.User
-	if err := c.ShouldBindJSON(&user); err != nil {
+	var req struct {
+		Username string `json:"username" binding:"required"`
+		Password string `json:"password" binding:"required"`
+		Email    string `json:"email"`
+		Role     string `json:"role"`
+		Status   *bool  `json:"status"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
+	}
+
+	if len(req.Password) < 6 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "密码长度不能少于6位"})
+		return
+	}
+
+	user := model.User{
+		Username: req.Username,
+		Password: req.Password,
+		Email:    req.Email,
+		Role:     req.Role,
+		Status:   true,
+	}
+	if user.Role == "" {
+		user.Role = "user"
 	}
 
 	err := api.userService.CreateUser(&user)
@@ -159,6 +181,7 @@ func (api *UserAPI) DeleteUser(c *gin.Context) {
 func (api *UserAPI) ListUsers(c *gin.Context) {
 	pageStr := c.DefaultQuery("page", "1")
 	pageSizeStr := c.DefaultQuery("pageSize", "10")
+	keyword := c.DefaultQuery("keyword", "")
 
 	page, err := strconv.Atoi(pageStr)
 	if err != nil || page < 1 {
@@ -170,7 +193,7 @@ func (api *UserAPI) ListUsers(c *gin.Context) {
 		pageSize = 10
 	}
 
-	users, total, err := api.userService.ListUsers(page, pageSize)
+	users, total, err := api.userService.ListUsers(page, pageSize, keyword)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

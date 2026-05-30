@@ -94,10 +94,10 @@
       <el-loading text="加载中..." />
     </div>
     
-    <el-dialog title="添加用户权限" v-model="showPermissionModal" width="400px">
-      <el-form ref="permissionForm" :model="permissionForm" :rules="permissionRules" label-width="80px">
+    <el-dialog title="添加用户权限" v-model="showPermissionModal" width="400px" @open="onPermDialogOpen">
+      <el-form ref="permFormRef" :model="permissionForm" :rules="permissionRules" label-width="80px">
         <el-form-item label="用户" prop="userId">
-          <el-select v-model="permissionForm.userId" placeholder="请选择用户">
+          <el-select v-model="permissionForm.userId" placeholder="请选择用户" filterable>
             <el-option 
               v-for="user in availableUsers" 
               :key="user.id" 
@@ -115,7 +115,7 @@
       </el-form>
       <template #footer>
         <el-button @click="showPermissionModal = false">取消</el-button>
-        <el-button type="primary" @click="handleAddPermission">确定</el-button>
+        <el-button type="primary" :loading="permSubmitting" @click="handleAddPermission">确定</el-button>
       </template>
     </el-dialog>
   </div>
@@ -138,6 +138,8 @@ const permissions = ref([])
 const availableUsers = ref([])
 const showPermissionModal = ref(false)
 const loading = ref(false)
+const permSubmitting = ref(false)
+const permFormRef = ref(null)
 
 const permissionForm = reactive({
   userId: '',
@@ -285,6 +287,9 @@ const fetchUsers = async () => {
 }
 
 const handleAddPermission = async () => {
+  const valid = await permFormRef.value?.validate().catch(() => false)
+  if (!valid) return
+
   let clusterId = route.params.id
   if (!clusterId) {
     ElMessage.error('集群ID无效')
@@ -303,6 +308,7 @@ const handleAddPermission = async () => {
   }
   
   try {
+    permSubmitting.value = true
     await clusterAPI.addPermission(clusterId, permissionForm.userId, permissionForm.permission)
     ElMessage.success('权限添加成功')
     showPermissionModal.value = false
@@ -311,7 +317,13 @@ const handleAddPermission = async () => {
     await fetchPermissions()
   } catch (error) {
     ElMessage.error(error.response?.data?.error || '添加失败')
+  } finally {
+    permSubmitting.value = false
   }
+}
+
+const onPermDialogOpen = () => {
+  fetchUsers()
 }
 
 const removePermission = async (userId) => {

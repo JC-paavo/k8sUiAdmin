@@ -6,7 +6,7 @@
         <p>Kubernetes 集群管理控制台</p>
       </div>
       <div class="header-actions">
-        <el-button type="primary" @click="goToClusterList">
+        <el-button v-if="isAdmin" type="primary" @click="goToClusterList">
           <el-icon><Plus /></el-icon>
           添加集群
         </el-button>
@@ -120,9 +120,9 @@
         <div class="empty-icon">
           <el-icon :size="64"><Link /></el-icon>
         </div>
-        <h3>暂无集群</h3>
-        <p>添加您的第一个 Kubernetes 集群以开始使用</p>
-        <el-button type="primary" @click="goToClusterList">
+        <h3>{{ isAdmin ? '暂无集群' : '暂无授权集群' }}</h3>
+        <p>{{ isAdmin ? '添加您的第一个 Kubernetes 集群以开始使用' : '请联系管理员为您分配集群访问权限' }}</p>
+        <el-button v-if="isAdmin" type="primary" @click="goToClusterList">
           <el-icon><Plus /></el-icon>
           添加第一个集群
         </el-button>
@@ -151,6 +151,7 @@ const clusters = ref([])
 const loading = ref(false)
 
 const user = computed(() => authStore.user.value)
+const isAdmin = computed(() => authStore.user.value?.role === 'admin')
 const connectedClusters = computed(() => clusters.value.filter(c => c.status === 'connected').length)
 const pendingClusters = computed(() => clusters.value.filter(c => c.status === 'pending').length)
 const errorClusters = computed(() => clusters.value.filter(c => c.status === 'error').length)

@@ -77,7 +77,23 @@ func (s *UserService) CreateUser(user *model.User) error {
 }
 
 func (s *UserService) UpdateUser(user *model.User) error {
-	return repository.DB.Save(user).Error
+	if user.ID == 1 {
+		return errors.New("默认管理员账号不可编辑")
+	}
+	updates := map[string]interface{}{
+		"username": user.Username,
+		"email":    user.Email,
+		"role":     user.Role,
+		"status":   user.Status,
+	}
+	if user.Password != "" && len(user.Password) >= 6 {
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+		if err != nil {
+			return err
+		}
+		updates["password"] = string(hashedPassword)
+	}
+	return repository.DB.Model(&model.User{}).Where("id = ?", user.ID).Updates(updates).Error
 }
 
 func (s *UserService) DeleteUser(id uint) error {
@@ -87,16 +103,22 @@ func (s *UserService) DeleteUser(id uint) error {
 	return repository.DB.Delete(&model.User{}, id).Error
 }
 
-func (s *UserService) ListUsers(page, pageSize int) ([]model.User, int64, error) {
+func (s *UserService) ListUsers(page, pageSize int, keyword string) ([]model.User, int64, error) {
 	var users []model.User
 	var total int64
 
-	err := repository.DB.Model(&model.User{}).Count(&total).Error
+	query := repository.DB.Model(&model.User{})
+	if keyword != "" {
+		kw := "%" + keyword + "%"
+		query = query.Where("username LIKE ? OR email LIKE ?", kw, kw)
+	}
+
+	err := query.Count(&total).Error
 	if err != nil {
 		return nil, 0, err
 	}
 
-	err = repository.DB.Offset((page - 1) * pageSize).Limit(pageSize).Find(&users).Error
+	err = query.Offset((page - 1) * pageSize).Limit(pageSize).Find(&users).Error
 	if err != nil {
 		return nil, 0, err
 	}

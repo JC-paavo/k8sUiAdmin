@@ -11,6 +11,7 @@ import (
 	"k8s-ui-admin/internal/api"
 	"k8s-ui-admin/internal/middleware"
 	"k8s-ui-admin/internal/repository"
+	"k8s-ui-admin/internal/service"
 )
 
 func init() {
@@ -117,6 +118,7 @@ func main() {
 		read.GET("/pods", k8sAPI.ListPods)
 		read.GET("/pods/:namespace/:name", k8sAPI.GetPod)
 		read.GET("/pods/:namespace/:name/logs", k8sAPI.GetPodLogs)
+		read.GET("/pods/:namespace/:name/metrics", k8sAPI.GetPodMetrics)
 		read.GET("/pods/:namespace/:name/events", k8sAPI.GetPodEvents)
 		read.GET("/events", k8sAPI.ListEvents)
 	}
@@ -154,6 +156,8 @@ func main() {
 	}
 
 	serveFrontend(r)
+
+	service.StartMetricsCollector()
 
 	port := os.Getenv("PORT")
 	if port == "" {

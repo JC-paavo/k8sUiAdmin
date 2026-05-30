@@ -12,11 +12,13 @@ import (
 
 type ClusterAPI struct {
 	clusterService *service.ClusterService
+	userService    *service.UserService
 }
 
 func NewClusterAPI() *ClusterAPI {
 	return &ClusterAPI{
 		clusterService: service.NewClusterService(),
+		userService:    service.NewUserService(),
 	}
 }
 
@@ -41,6 +43,10 @@ func (api *ClusterAPI) GetCluster(c *gin.Context) {
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ID格式错误"})
+		return
+	}
+
+	if !api.checkClusterAccess(c, uint(id)) {
 		return
 	}
 
@@ -127,6 +133,10 @@ func (api *ClusterAPI) TestConnection(c *gin.Context) {
 		return
 	}
 
+	if !api.checkClusterAccess(c, uint(id)) {
+		return
+	}
+
 	err = api.clusterService.TestClusterConnection(uint(id))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -141,6 +151,10 @@ func (api *ClusterAPI) RefreshStatus(c *gin.Context) {
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ID格式错误"})
+		return
+	}
+
+	if !api.checkClusterAccess(c, uint(id)) {
 		return
 	}
 
@@ -219,4 +233,22 @@ func (api *ClusterAPI) GetClusterPermissions(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, permissions)
+}
+
+func (api *ClusterAPI) checkClusterAccess(c *gin.Context, clusterID uint) bool {
+	role, _ := c.Get("role")
+	if role == "admin" {
+		return true
+	}
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "未登录"})
+		return false
+	}
+	hasPermission, err := api.userService.CheckClusterPermission(userID.(uint), clusterID, "read")
+	if err != nil || !hasPermission {
+		c.JSON(http.StatusForbidden, gin.H{"error": "无权限访问该集群"})
+		return false
+	}
+	return true
 }

@@ -33,7 +33,7 @@
           <span>Clusters</span>
         </router-link>
         
-        <router-link v-if="authStore.user?.role === 'admin'" to="/users" class="nav-item" :class="{ active: route.path.startsWith('/users') }">
+        <router-link v-if="isAdmin" to="/users" class="nav-item" :class="{ active: route.path.startsWith('/users') }">
           <el-icon><User /></el-icon>
           <span>用户管理</span>
         </router-link>
@@ -42,11 +42,11 @@
       <div class="sidebar-footer">
         <div class="user-info">
           <div class="user-avatar">
-            {{ authStore.user?.username?.charAt(0).toUpperCase() }}
+            {{ userName.charAt(0).toUpperCase() }}
           </div>
           <div class="user-details">
-            <div class="user-name">{{ authStore.user?.username }}</div>
-            <div class="user-role">{{ authStore.user?.role === 'admin' ? 'Administrator' : 'User' }}</div>
+            <div class="user-name">{{ userName }}</div>
+            <div class="user-role">{{ userRole }}</div>
           </div>
         </div>
         
@@ -74,21 +74,25 @@
       <router-view />
     </div>
 
-    <change-password-dialog v-model="showChangePassword" />
+    <ChangePassword v-model="showChangePassword" />
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { HomeFilled, Grid, User, MoreFilled, Key, SwitchButton } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
+import ChangePassword from './ChangePassword.vue'
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const showChangePassword = ref(false)
+const isAdmin = computed(() => authStore.user.value?.role === 'admin')
+const userName = computed(() => authStore.user.value?.username || '')
+const userRole = computed(() => authStore.user.value?.role === 'admin' ? 'Administrator' : 'User')
 
 const handleCommand = async (command) => {
   if (command === 'change-password') {
@@ -302,6 +306,7 @@ const handleCommand = async (command) => {
   flex: 1;
   margin-left: 260px;
   min-height: 100vh;
+  padding: 32px;
   animation: fadeIn 0.3s ease;
 }
 </style>

@@ -56,3 +56,13 @@ type AuditLog struct {
 	Details     string    `json:"details"`
 	User        User      `gorm:"foreignKey:UserID"`
 }
+
+type PodMetrics struct {
+	ID          uint    `gorm:"primaryKey" json:"id"`
+	CollectedAt string  `gorm:"not null;index" json:"collected_at"`
+	ClusterID   uint    `gorm:"not null;index" json:"cluster_id"`
+	PodName     string  `gorm:"not null;index" json:"pod_name"`
+	Namespace   string  `gorm:"not null;index" json:"namespace"`
+	CPUMillicores int64 `json:"cpu_millicores"`
+	MemoryBytes   int64 `json:"memory_bytes"`
+}

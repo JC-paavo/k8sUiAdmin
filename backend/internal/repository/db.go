@@ -14,16 +14,26 @@ var DB *gorm.DB
 
 func InitDB(dbPath string) error {
 	var err error
-	DB, err = gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
+	DB, err = gorm.Open(sqlite.Open(dbPath+"?_journal_mode=WAL&_busy_timeout=5000"), &gorm.Config{
+		SkipDefaultTransaction: true,
+	})
 	if err != nil {
 		return err
 	}
+
+	sqlDB, err := DB.DB()
+	if err != nil {
+		return err
+	}
+	sqlDB.SetMaxOpenConns(1)
+	sqlDB.SetMaxIdleConns(1)
 
 	err = DB.AutoMigrate(
 		&model.User{},
 		&model.Cluster{},
 		&model.ClusterPermission{},
 		&model.AuditLog{},
+		&model.PodMetrics{},
 	)
 	if err != nil {
 		return err

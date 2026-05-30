@@ -1,16 +1,20 @@
 package api
 
 import (
+	"context"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s-ui-admin/internal/k8s"
 	"k8s-ui-admin/internal/model"
+	"k8s-ui-admin/internal/repository"
 	"k8s-ui-admin/internal/service"
 )
 
@@ -1026,5 +1030,108 @@ func (api *K8sAPI) GetDeploymentHistory(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, history)
+}
+
+func (api *K8sAPI) GetPodMetrics(c *gin.Context) {
+	clusterIDStr := c.Param("cluster_id")
+	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "集群ID格式错误"})
+		return
+	}
+
+	namespace := c.Param("namespace")
+	podName := c.Param("name")
+
+	cutoff := time.Now().Add(-1 * time.Hour).Format("2006-01-02 15:04:05")
+
+	var metrics []model.PodMetrics
+	err = repository.DB.Where(
+		"cluster_id = ? AND namespace = ? AND pod_name = ? AND collected_at >= ?",
+		uint(clusterID), namespace, podName, cutoff,
+	).Order("collected_at asc").Find(&metrics).Error
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	if len(metrics) == 0 {
+		var cluster model.Cluster
+		if err := repository.DB.First(&cluster, clusterID).Error; err != nil {
+			c.JSON(http.StatusOK, gin.H{"data": []interface{}{}})
+			return
+		}
+		livePoint := fetchLiveMetrics(&cluster, namespace, podName)
+		if livePoint == nil {
+			c.JSON(http.StatusOK, gin.H{"data": []interface{}{}})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": []TimelinePoint{*livePoint}})
+		return
+	}
+
+	type TimelinePoint struct {
+		Time   string  `json:"time"`
+		CPU    float64 `json:"cpu"`
+		Memory float64 `json:"memory"`
+	}
+
+	grouped := make(map[string][]model.PodMetrics)
+	for _, m := range metrics {
+		grouped[m.CollectedAt] = append(grouped[m.CollectedAt], m)
+	}
+
+	timeline := make([]TimelinePoint, 0, len(grouped))
+	for ts, items := range grouped {
+		var totalCPU, totalMem int64
+		for _, item := range items {
+			totalCPU += item.CPUMillicores
+			totalMem += item.MemoryBytes
+		}
+		timeline = append(timeline, TimelinePoint{
+			Time:   ts,
+			CPU:    float64(totalCPU) / 1000.0,
+			Memory: float64(totalMem) / (1024 * 1024),
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": timeline})
+}
+
+type TimelinePoint struct {
+	Time   string  `json:"time"`
+	CPU    float64 `json:"cpu"`
+	Memory float64 `json:"memory"`
+}
+
+func fetchLiveMetrics(cluster *model.Cluster, namespace, podName string) *TimelinePoint {
+	metricsClient, err := k8s.GetMetricsClient(cluster)
+	if err != nil {
+		return nil
+	}
+
+	podMetricsList, err := metricsClient.MetricsV1beta1().PodMetricses(namespace).List(context.TODO(), metav1.ListOptions{
+		FieldSelector: "metadata.name=" + podName,
+	})
+	if err != nil {
+		return nil
+	}
+
+	for _, pm := range podMetricsList.Items {
+		if pm.Name == podName {
+			var totalCPU, totalMem int64
+			for _, container := range pm.Containers {
+				totalCPU += container.Usage.Cpu().MilliValue()
+				totalMem += container.Usage.Memory().Value()
+			}
+			now := time.Now().Format("2006-01-02 15:04:05")
+			return &TimelinePoint{
+				Time:   now,
+				CPU:    float64(totalCPU) / 1000.0,
+				Memory: float64(totalMem) / (1024 * 1024),
+			}
+		}
+	}
+	return nil
 }
 

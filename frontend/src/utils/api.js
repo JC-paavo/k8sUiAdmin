@@ -40,7 +40,7 @@ export const authAPI = {
 }
 
 export const userAPI = {
-  list: (page, pageSize) => api.get('/admin/users', { params: { page, pageSize } }),
+  list: (page, pageSize, keyword) => api.get('/admin/users', { params: { page, pageSize, keyword } }),
   create: (user) => api.post('/admin/users', user),
   get: (id) => api.get(`/admin/users/${id}`),
   update: (id, user) => api.put(`/admin/users/${id}`, user),
@@ -151,6 +151,8 @@ export const k8sAPI = {
     api.get(`/k8s/${clusterId}/pods/${namespace}/${name}/logs`, { params: { container } }),
   getPodEvents: (clusterId, namespace, name) => 
     api.get(`/k8s/${clusterId}/pods/${namespace}/${name}/events`),
+  getPodMetrics: (clusterId, namespace, name) => 
+    api.get(`/k8s/${clusterId}/pods/${namespace}/${name}/metrics`),
   getDeploymentEvents: (clusterId, namespace, name) => 
     api.get(`/k8s/${clusterId}/deployments/${namespace}/${name}/events`),
   getServiceEvents: (clusterId, namespace, name) => 
