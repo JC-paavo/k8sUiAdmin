@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"log"
+	"os"
+	"strconv"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -14,9 +16,36 @@ import (
 
 var stopCollector = make(chan struct{})
 
+func MetricsCollectInterval() time.Duration {
+	v := os.Getenv("METRICS_COLLECT_INTERVAL")
+	if v == "" {
+		return 60 * time.Second
+	}
+	sec, err := strconv.Atoi(v)
+	if err != nil || sec < 10 {
+		return 60 * time.Second
+	}
+	return time.Duration(sec) * time.Second
+}
+
+func MetricsRetentionMinutes() int {
+	v := os.Getenv("METRICS_RETENTION_MINUTES")
+	if v == "" {
+		return 10
+	}
+	m, err := strconv.Atoi(v)
+	if err != nil || m < 1 {
+		return 10
+	}
+	return m
+}
+
 func StartMetricsCollector() {
+	interval := MetricsCollectInterval()
+	log.Printf("metrics采集：启动，间隔=%v，保留=%d分钟", interval, MetricsRetentionMinutes())
+
 	go func() {
-		ticker := time.NewTicker(60 * time.Second)
+		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
 
 		collectNow()
@@ -48,7 +77,8 @@ func collectNow() {
 		collectClusterMetrics(&cluster)
 	}
 
-	cutoff := time.Now().Add(-1 * time.Hour).Format("2006-01-02 15:04:05")
+	retention := MetricsRetentionMinutes()
+	cutoff := time.Now().Add(-time.Duration(retention) * time.Minute).Format("2006-01-02 15:04:05")
 	repository.DB.Where("collected_at < ?", cutoff).Delete(&model.PodMetrics{})
 }
 

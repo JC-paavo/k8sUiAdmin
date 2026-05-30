@@ -1043,7 +1043,8 @@ func (api *K8sAPI) GetPodMetrics(c *gin.Context) {
 	namespace := c.Param("namespace")
 	podName := c.Param("name")
 
-	cutoff := time.Now().Add(-1 * time.Hour).Format("2006-01-02 15:04:05")
+	retention := service.MetricsRetentionMinutes()
+	cutoff := time.Now().Add(-time.Duration(retention) * time.Minute).Format("2006-01-02 15:04:05")
 
 	var metrics []model.PodMetrics
 	err = repository.DB.Where(

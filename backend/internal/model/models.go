@@ -1,10 +1,12 @@
 package model
 
+import "gorm.io/gorm"
+
 type User struct {
-	ID        uint   `gorm:"primaryKey" json:"id"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
-	DeletedAt string `json:"deleted_at"`
+	ID        uint           `gorm:"primaryKey" json:"id"`
+	CreatedAt string         `json:"created_at"`
+	UpdatedAt string         `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 	Username          string               `gorm:"unique;not null" json:"username"`
 	Password          string               `gorm:"not null" json:"-"`
 	Email             string               `gorm:"unique" json:"email"`
@@ -14,10 +16,10 @@ type User struct {
 }
 
 type Cluster struct {
-	ID        uint   `gorm:"primaryKey" json:"id"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
-	DeletedAt string `json:"deleted_at"`
+	ID        uint           `gorm:"primaryKey" json:"id"`
+	CreatedAt string         `json:"created_at"`
+	UpdatedAt string         `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 	Name        string               `gorm:"unique;not null" json:"name"`
 	Alias       string               `json:"alias"`
 	Server      string               `gorm:"not null" json:"server"`
@@ -31,10 +33,10 @@ type Cluster struct {
 }
 
 type ClusterPermission struct {
-	ID         uint   `gorm:"primaryKey" json:"id"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
-	DeletedAt string `json:"deleted_at"`
+	ID         uint           `gorm:"primaryKey" json:"id"`
+	CreatedAt string         `json:"created_at"`
+	UpdatedAt string         `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 	UserID     uint   `gorm:"not null" json:"user_id"`
 	ClusterID  uint   `gorm:"not null" json:"cluster_id"`
 	Permission string `gorm:"not null" json:"permission"`
@@ -43,10 +45,10 @@ type ClusterPermission struct {
 }
 
 type AuditLog struct {
-	ID         uint   `gorm:"primaryKey" json:"id"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
-	DeletedAt string `json:"deleted_at"`
+	ID         uint           `gorm:"primaryKey" json:"id"`
+	CreatedAt string         `json:"created_at"`
+	UpdatedAt string         `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 	UserID      uint      `gorm:"not null" json:"user_id"`
 	ClusterID   uint      `json:"cluster_id"`
 	Action      string    `gorm:"not null" json:"action"`

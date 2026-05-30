@@ -28,6 +28,9 @@ func InitDB(dbPath string) error {
 	sqlDB.SetMaxOpenConns(1)
 	sqlDB.SetMaxIdleConns(1)
 
+	// 清理旧的空字符串 deleted_at 值（兼容 string → gorm.DeletedAt 类型变更）
+	migrateDeletedAt()
+
 	err = DB.AutoMigrate(
 		&model.User{},
 		&model.Cluster{},
@@ -45,12 +48,24 @@ func InitDB(dbPath string) error {
 		log.Printf("Warning: failed to ensure cluster columns: %v", err)
 	}
 
+	err = ensureIndexes()
+	if err != nil {
+		log.Printf("Warning: failed to ensure indexes: %v", err)
+	}
+
 	err = createDefaultAdmin()
 	if err != nil {
 		log.Printf("Warning: failed to create default admin: %v", err)
 	}
 
 	return nil
+}
+
+func migrateDeletedAt() {
+	tables := []string{"users", "clusters", "cluster_permissions", "audit_logs"}
+	for _, table := range tables {
+		DB.Exec("UPDATE " + table + " SET deleted_at = NULL WHERE deleted_at = ''")
+	}
 }
 
 // ensureClusterColumns 确保集群表有必要的列（GORM AutoMigrate 可能不会为已有表添加新列）
@@ -94,4 +109,33 @@ func createDefaultAdmin() error {
 	}
 
 	return DB.Create(admin).Error
+}
+
+func ensureIndexes() error {
+	indexes := []string{
+		// 集群权限查询: 按用户ID查集群/按集群ID查用户
+		"CREATE INDEX IF NOT EXISTS idx_cluster_permissions_user_id ON cluster_permissions(user_id)",
+		"CREATE INDEX IF NOT EXISTS idx_cluster_permissions_cluster_id ON cluster_permissions(cluster_id)",
+		"CREATE INDEX IF NOT EXISTS idx_cluster_permissions_user_cluster ON cluster_permissions(user_id, cluster_id)",
+
+		// Pod指标查询: GetPodMetrics 按 cluster+namespace+pod+时间 组合查询
+		"CREATE INDEX IF NOT EXISTS idx_pod_metrics_lookup ON pod_metrics(cluster_id, namespace, pod_name, collected_at)",
+
+		// Pod指标清理: 定期按时间删除过期数据
+		"CREATE INDEX IF NOT EXISTS idx_pod_metrics_collected_at ON pod_metrics(collected_at)",
+
+		// 集群状态查询: 仪表盘统计/采集器过滤已连接集群
+		"CREATE INDEX IF NOT EXISTS idx_clusters_status ON clusters(status)",
+
+		// 审计日志: 按用户+时间查询操作记录
+		"CREATE INDEX IF NOT EXISTS idx_audit_logs_user_time ON audit_logs(user_id, created_at)",
+	}
+
+	for _, idx := range indexes {
+		if err := DB.Exec(idx).Error; err != nil {
+			log.Printf("Warning: create index failed: %v", err)
+		}
+	}
+
+	return nil
 }
