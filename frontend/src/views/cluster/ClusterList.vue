@@ -314,6 +314,8 @@ const currentPage = ref(1)
 const pageSize = ref(20)
 const showCreateModal = ref(false)
 const showEditModal = ref(false)
+const clusterFormRef = ref(null)
+const editClusterFormRef = ref(null)
 const creating = ref(false)
 const updating = ref(false)
 const editingCluster = ref(null)
@@ -534,14 +536,16 @@ const handleCreate = async () => {
     }
     
     await clusterAPI.create(data)
-    await fetchClusters()
     handleCancelCreate()
     ElMessage.success('创建成功')
   } catch (error) {
-    ElMessage.error(error.response?.data?.error || '创建失败')
-  } finally {
+    console.error('创建集群失败:', error, error.response?.data)
+    ElMessage.error(error.response?.data?.error || error.message || '创建失败')
     creating.value = false
+    return
   }
+  creating.value = false
+  await fetchClusters()
 }
 
 const handleUpdate = async () => {
