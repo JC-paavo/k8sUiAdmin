@@ -26,6 +26,13 @@ func serveFrontend(r *gin.Engine) {
 			return
 		}
 
+		path := c.Request.URL.Path
+		if strings.HasPrefix(path, "/assets/") {
+			c.Header("Cache-Control", "public, max-age=31536000, immutable")
+		} else {
+			c.Header("Cache-Control", "no-cache, no-store, must-revalidate")
+		}
+
 		fileServer.ServeHTTP(c.Writer, c.Request)
 
 		if c.Writer.Status() == 404 {

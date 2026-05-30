@@ -978,8 +978,14 @@ const fetchRelatedResources = async () => {
     const allPods = podsResponse.data || []
     
     // 根据selector匹配Pod
+    let matchLabels = null
     if (resource.value?.spec?.selector?.matchLabels) {
-      const matchLabels = resource.value.spec.selector.matchLabels
+      matchLabels = resource.value.spec.selector.matchLabels
+    } else if (resource.value?.spec?.selector && !resource.value.spec.selector.matchLabels && !resource.value.spec.selector.matchExpressions) {
+      matchLabels = resource.value.spec.selector
+    }
+
+    if (matchLabels) {
       relatedPods.value = allPods.filter(pod => {
         const podLabels = pod.metadata?.labels || {}
         return Object.entries(matchLabels).every(
@@ -995,11 +1001,17 @@ const fetchRelatedResources = async () => {
     const allServices = servicesResponse.data || []
     
     // 根据selector匹配Service
+    let svcMatchLabels = null
     if (resource.value?.spec?.selector?.matchLabels) {
-      const matchLabels = resource.value.spec.selector.matchLabels
+      svcMatchLabels = resource.value.spec.selector.matchLabels
+    } else if (resource.value?.spec?.selector && !resource.value.spec.selector.matchLabels && !resource.value.spec.selector.matchExpressions) {
+      svcMatchLabels = resource.value.spec.selector
+    }
+
+    if (svcMatchLabels) {
       relatedServices.value = allServices.filter(service => {
         const serviceSelector = service.spec?.selector || {}
-        return Object.entries(matchLabels).every(
+        return Object.entries(svcMatchLabels).every(
           ([key, value]) => serviceSelector[key] === value
         )
       })
@@ -1239,6 +1251,11 @@ const goBack = () => {
 
 
 onMounted(() => {
+  fetchData()
+  startLiveUpdate()
+})
+
+watch(() => route.fullPath, () => {
   fetchData()
   startLiveUpdate()
 })
