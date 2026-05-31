@@ -1,0 +1,151 @@
+# K8s UI Admin - Kubernetes Deployment Manifests
+# Usage: kubectl apply -f k8s-ui-admin.yaml
+
+---
+# Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: k8s-ui-admin
+  labels:
+    name: k8s-ui-admin
+
+---
+# Persistent Volume Claim for database
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: k8s-ui-admin-data
+  namespace: k8s-ui-admin
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+# ConfigMap for configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: k8s-ui-admin-config
+  namespace: k8s-ui-admin
+data:
+  ADMIN_PASSWORD: "admin"  # 修改此密码为你想要的密码
+  GIN_MODE: "release"
+  PORT: "8080"
+
+---
+# Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8s-ui-admin
+  namespace: k8s-ui-admin
+  labels:
+    app: k8s-ui-admin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: k8s-ui-admin
+  template:
+    metadata:
+      labels:
+        app: k8s-ui-admin
+    spec:
+      containers:
+        - name: k8s-ui-admin
+          image: k8s-ui-admin:latest
+          imagePullPolicy: IfNotPresent  # 使用本地镜像，如果从 registry 拉取改为 Always
+          ports:
+            - containerPort: 8080
+              name: http
+          envFrom:
+            - configMapRef:
+                name: k8s-ui-admin-config
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: k8s-ui-admin-data
+
+---
+# Service (ClusterIP for internal access)
+apiVersion: v1
+kind: Service
+metadata:
+  name: k8s-ui-admin
+  namespace: k8s-ui-admin
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app: k8s-ui-admin
+
+---
+# Optional: NodePort Service (for external access without Ingress)
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: k8s-ui-admin-nodeport
+#   namespace: k8s-ui-admin
+# spec:
+#   type: NodePort
+#   ports:
+#     - port: 8080
+#       targetPort: http
+#       nodePort: 30880  # 可选，不指定则随机分配
+#       protocol: TCP
+#       name: http
+#   selector:
+#     app: k8s-ui-admin
+
+---
+# Optional: Ingress (for external access with hostname)
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: k8s-ui-admin
+#   namespace: k8s-ui-admin
+#   annotations:
+#     nginx.ingress.kubernetes.io/rewrite-target: /
+# spec:
+#   ingressClassName: nginx
+#   rules:
+#     - host: k8s-ui-admin.example.com  # 修改为你的域名
+#       http:
+#         paths:
+#           - path: /
+#             pathType: Prefix
+#             backend:
+#               service:
+#                 name: k8s-ui-admin
+#                 port:
+#                   number: 8080
