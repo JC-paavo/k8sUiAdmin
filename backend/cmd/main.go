@@ -34,7 +34,13 @@ func main() {
 	fullPath := filepath.Join(wd, dbPath)
 	log.Printf("Using database file: %s", fullPath)
 
-	err = repository.InitDB(fullPath)
+	adminPassword := os.Getenv("ADMIN_PASSWORD")
+	if adminPassword == "" {
+		adminPassword = "admin"
+		log.Printf("Warning: ADMIN_PASSWORD not set, using default password 'admin'")
+	}
+
+	err = repository.InitDB(fullPath, adminPassword)
 	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}

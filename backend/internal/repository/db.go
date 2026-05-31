@@ -12,7 +12,7 @@ import (
 
 var DB *gorm.DB
 
-func InitDB(dbPath string) error {
+func InitDB(dbPath string, adminPassword string) error {
 	var err error
 	DB, err = gorm.Open(sqlite.Open(dbPath+"?_journal_mode=WAL&_busy_timeout=5000"), &gorm.Config{
 		SkipDefaultTransaction: true,
@@ -53,9 +53,9 @@ func InitDB(dbPath string) error {
 		log.Printf("Warning: failed to ensure indexes: %v", err)
 	}
 
-	err = createDefaultAdmin()
+	err = ensureDefaultAdmin(adminPassword)
 	if err != nil {
-		log.Printf("Warning: failed to create default admin: %v", err)
+		log.Printf("Warning: failed to ensure default admin: %v", err)
 	}
 
 	return nil
@@ -88,27 +88,32 @@ func ensureClusterColumns() error {
 	return nil
 }
 
-func createDefaultAdmin() error {
-	var count int64
-	DB.Model(&model.User{}).Count(&count)
-	if count > 0 {
-		return nil
-	}
-
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("admin"), bcrypt.DefaultCost)
+func ensureDefaultAdmin(password string) error {
+	var admin model.User
+	result := DB.Where("username = ?", "admin").First(&admin)
+	
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
 
-	admin := &model.User{
-		Username: "admin",
-		Password: string(hashedPassword),
-		Email:    "admin@example.com",
-		Role:     "admin",
-		Status:   true,
+	if result.Error == gorm.ErrRecordNotFound {
+		admin = model.User{
+			Username: "admin",
+			Password: string(hashedPassword),
+			Email:    "admin@example.com",
+			Role:     "admin",
+			Status:   true,
+		}
+		return DB.Create(&admin).Error
 	}
 
-	return DB.Create(admin).Error
+	if result.Error != nil {
+		return result.Error
+	}
+
+	admin.Password = string(hashedPassword)
+	return DB.Save(&admin).Error
 }
 
 func ensureIndexes() error {
