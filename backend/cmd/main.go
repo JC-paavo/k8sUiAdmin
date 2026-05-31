@@ -25,7 +25,7 @@ func main() {
 	// 优先使用当前目录下的数据库文件，避免环境变量干扰
 	dbPath := "k8s_ui_admin.db"
 	if os.Getenv("DB_PATH") == "" {
-		log.Printf("DB_PATH not set, using default path: ", dbPath)
+		log.Printf("DB_PATH not set, using default path: %s", dbPath)
 	} else {
 		dbPath = os.Getenv("DB_PATH")
 		log.Printf("Using database file: %s", dbPath)
