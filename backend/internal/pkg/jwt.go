@@ -2,6 +2,8 @@ package pkg
 
 import (
 	"errors"
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -18,7 +20,11 @@ type Claims struct {
 
 func GenerateToken(userID uint, username, role string) (string, error) {
 	nowTime := time.Now()
-	expireTime := nowTime.Add(24 * time.Hour)
+	expireHours, err := strconv.Atoi(os.Getenv("JWT_EXPIRE_HOURS"))
+	if err != nil {
+		return "", err
+	}
+	expireTime := nowTime.Add(time.Duration(expireHours) * time.Hour)
 
 	claims := Claims{
 		UserID:   userID,
