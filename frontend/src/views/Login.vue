@@ -71,13 +71,6 @@
               <span v-if="!loading">登录</span>
               <span v-else>登录中...</span>
             </el-button>
-
-            <div class="login-tip">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                <path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 12.5a5.5 5.5 0 110-11 5.5 5.5 0 010 11zM8 4a.75.75 0 00-.75.75v3.5a.75.75 0 001.5 0v-3.5A.75.75 0 008 4zm0 8a1 1 0 100-2 1 1 0 000 2z"/>
-              </svg>
-              <span>默认账号：<strong>admin / admin</strong></span>
-            </div>
           </el-form>
         </div>
 
@@ -320,53 +313,15 @@ const handleLogin = async () => {
   height: 48px;
   font-size: 16px;
   font-weight: 600;
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+  background: #3b82f6;
   border: none;
   border-radius: var(--radius-md);
   margin-top: 8px;
   transition: all var(--transition-base);
-  position: relative;
-  overflow: hidden;
 }
 
-.login-button::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, var(--primary-light), var(--success-color));
-  opacity: 0;
-  transition: opacity var(--transition-fast);
-}
-
-.login-button:hover::before {
-  opacity: 1;
-}
-
-.login-button span {
-  position: relative;
-  z-index: 1;
-}
-
-.login-tip {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 24px;
-  padding: 12px 16px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  font-size: 13px;
-  color: var(--text-tertiary);
-}
-
-.login-tip svg {
-  flex-shrink: 0;
-  color: var(--primary-color);
-}
-
-.login-tip strong {
-  color: var(--primary-light);
+.login-button:hover {
+  background: #2563eb;
 }
 
 .login-footer {

@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 	"os"
-	"path/filepath"
+	// "path/filepath"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -24,15 +24,20 @@ func init() {
 func main() {
 	// 优先使用当前目录下的数据库文件，避免环境变量干扰
 	dbPath := "k8s_ui_admin.db"
-	
-	wd, err := os.Getwd()
-	if err != nil {
-		log.Printf("Warning: Failed to get working directory: %v", err)
-		wd = "."
+	if os.Getenv("DB_PATH") == "" {
+		log.Printf("DB_PATH not set, using default path: ", dbPath)
+	} else {
+		dbPath = os.Getenv("DB_PATH")
+		log.Printf("Using database file: %s", dbPath)
 	}
-	
-	fullPath := filepath.Join(wd, dbPath)
-	log.Printf("Using database file: %s", fullPath)
+	// wd, err := os.Getwd()
+	// if err != nil {
+	// 	log.Printf("Warning: Failed to get working directory: %v", err)
+	// 	wd = "."
+	// }
+
+	// fullPath := filepath.Join(wd, dbPath)
+	// log.Printf("Using database file: %s", fullPath)
 
 	adminPassword := os.Getenv("ADMIN_PASSWORD")
 	if adminPassword == "" {
@@ -40,7 +45,7 @@ func main() {
 		log.Printf("Warning: ADMIN_PASSWORD not set, using default password 'admin'")
 	}
 
-	err = repository.InitDB(fullPath, adminPassword)
+	err := repository.InitDB(dbPath, adminPassword)
 	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
@@ -95,40 +100,40 @@ func main() {
 		}
 
 		read := auth.Group("/k8s/:cluster_id")
-	read.Use(middleware.ClusterPermissionMiddleware("read"))
-	{
-		read.GET("/namespaces", k8sAPI.ListNamespaces)
-		read.GET("/cluster/resource-usage", k8sAPI.GetClusterResourceUsage)
-		read.GET("/deployments", k8sAPI.ListDeployments)
-		read.GET("/deployments/:namespace/:name", k8sAPI.GetDeployment)
-		read.GET("/deployments/:namespace/:name/events", k8sAPI.GetDeploymentEvents)
-		read.GET("/deployments/:namespace/:name/history", k8sAPI.GetDeploymentHistory)
-		read.GET("/statefulsets", k8sAPI.ListStatefulSets)
-		read.GET("/statefulsets/:namespace/:name", k8sAPI.GetStatefulSet)
-		read.GET("/statefulsets/:namespace/:name/events", k8sAPI.GetStatefulSetEvents)
-		read.GET("/daemonsets", k8sAPI.ListDaemonSets)
-		read.GET("/daemonsets/:namespace/:name", k8sAPI.GetDaemonSet)
-		read.GET("/daemonsets/:namespace/:name/events", k8sAPI.GetDaemonSetEvents)
-		read.GET("/services", k8sAPI.ListServices)
-		read.GET("/services/:namespace/:name", k8sAPI.GetService)
-		read.GET("/services/:namespace/:name/events", k8sAPI.GetServiceEvents)
-		read.GET("/ingresses", k8sAPI.ListIngresses)
-		read.GET("/ingresses/:namespace/:name", k8sAPI.GetIngress)
-		read.GET("/ingresses/:namespace/:name/events", k8sAPI.GetIngressEvents)
-		read.GET("/configmaps", k8sAPI.ListConfigMaps)
-		read.GET("/configmaps/:namespace/:name", k8sAPI.GetConfigMap)
-		read.GET("/configmaps/:namespace/:name/events", k8sAPI.GetConfigMapEvents)
-		read.GET("/secrets", k8sAPI.ListSecrets)
-		read.GET("/secrets/:namespace/:name", k8sAPI.GetSecret)
-		read.GET("/secrets/:namespace/:name/events", k8sAPI.GetSecretEvents)
-		read.GET("/pods", k8sAPI.ListPods)
-		read.GET("/pods/:namespace/:name", k8sAPI.GetPod)
-		read.GET("/pods/:namespace/:name/logs", k8sAPI.GetPodLogs)
-		read.GET("/pods/:namespace/:name/metrics", k8sAPI.GetPodMetrics)
-		read.GET("/pods/:namespace/:name/events", k8sAPI.GetPodEvents)
-		read.GET("/pods/:namespace/:name/exec", k8sAPI.ExecPod)
-		read.GET("/events", k8sAPI.ListEvents)
-	}
+		read.Use(middleware.ClusterPermissionMiddleware("read"))
+		{
+			read.GET("/namespaces", k8sAPI.ListNamespaces)
+			read.GET("/cluster/resource-usage", k8sAPI.GetClusterResourceUsage)
+			read.GET("/deployments", k8sAPI.ListDeployments)
+			read.GET("/deployments/:namespace/:name", k8sAPI.GetDeployment)
+			read.GET("/deployments/:namespace/:name/events", k8sAPI.GetDeploymentEvents)
+			read.GET("/deployments/:namespace/:name/history", k8sAPI.GetDeploymentHistory)
+			read.GET("/statefulsets", k8sAPI.ListStatefulSets)
+			read.GET("/statefulsets/:namespace/:name", k8sAPI.GetStatefulSet)
+			read.GET("/statefulsets/:namespace/:name/events", k8sAPI.GetStatefulSetEvents)
+			read.GET("/daemonsets", k8sAPI.ListDaemonSets)
+			read.GET("/daemonsets/:namespace/:name", k8sAPI.GetDaemonSet)
+			read.GET("/daemonsets/:namespace/:name/events", k8sAPI.GetDaemonSetEvents)
+			read.GET("/services", k8sAPI.ListServices)
+			read.GET("/services/:namespace/:name", k8sAPI.GetService)
+			read.GET("/services/:namespace/:name/events", k8sAPI.GetServiceEvents)
+			read.GET("/ingresses", k8sAPI.ListIngresses)
+			read.GET("/ingresses/:namespace/:name", k8sAPI.GetIngress)
+			read.GET("/ingresses/:namespace/:name/events", k8sAPI.GetIngressEvents)
+			read.GET("/configmaps", k8sAPI.ListConfigMaps)
+			read.GET("/configmaps/:namespace/:name", k8sAPI.GetConfigMap)
+			read.GET("/configmaps/:namespace/:name/events", k8sAPI.GetConfigMapEvents)
+			read.GET("/secrets", k8sAPI.ListSecrets)
+			read.GET("/secrets/:namespace/:name", k8sAPI.GetSecret)
+			read.GET("/secrets/:namespace/:name/events", k8sAPI.GetSecretEvents)
+			read.GET("/pods", k8sAPI.ListPods)
+			read.GET("/pods/:namespace/:name", k8sAPI.GetPod)
+			read.GET("/pods/:namespace/:name/logs", k8sAPI.GetPodLogs)
+			read.GET("/pods/:namespace/:name/metrics", k8sAPI.GetPodMetrics)
+			read.GET("/pods/:namespace/:name/events", k8sAPI.GetPodEvents)
+			read.GET("/pods/:namespace/:name/exec", k8sAPI.ExecPod)
+			read.GET("/events", k8sAPI.ListEvents)
+		}
 
 		write := auth.Group("/k8s/:cluster_id")
 		write.Use(middleware.ClusterPermissionMiddleware("write"))

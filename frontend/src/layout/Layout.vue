@@ -42,7 +42,10 @@
       <div class="sidebar-footer">
         <div class="user-info">
           <div class="user-avatar">
-            {{ userName.charAt(0).toUpperCase() }}
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="8" r="4" fill="white"/>
+              <path d="M4 20C4 16.6863 6.68629 14 10 14H14C17.3137 14 20 16.6863 20 20" stroke="white" stroke-width="2" stroke-linecap="round"/>
+            </svg>
           </div>
           <div class="user-details">
             <div class="user-name">{{ userName }}</div>
@@ -250,18 +253,15 @@ const handleCommand = async (command) => {
 }
 
 .user-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
-  background: linear-gradient(135deg, var(--primary-color), var(--info-color));
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #8b5cf6, #6366f1);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
-  font-weight: 700;
-  color: white;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.4);
 }
 
 .user-details {

@@ -30,14 +30,14 @@ func LoadConfig(path string) (*Config, error) {
 	if err != nil {
 		log.Println("Warning: .env file not found, using defaults")
 	}
-	
+
 	config.Server.Port = "8080"
 	config.Server.ReadTimeout = "30s"
 	config.Server.WriteTimeout = "30s"
-	config.Database.Path = "./data/k8s_ui_admin.db"
+	config.Database.Path = "./k8s_ui_admin.db"
 	config.JWT.Secret = "k8s-ui-admin-secret-key-change-in-production"
 	config.JWT.ExpireHours = 24
 	config.Logging.Level = "debug"
-	
+
 	return config, nil
 }
